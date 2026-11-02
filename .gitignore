@@ -1,0 +1,7 @@
+.DS_Store
+*.xojo_uistate
+*.debug.app/
+Builds*/
+XojoCompileErrors.txt
+XojoRunProject.txt
+*.rsd
