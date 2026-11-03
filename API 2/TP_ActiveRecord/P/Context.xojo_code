@@ -95,7 +95,7 @@ Protected Class Context
 		  'Mutexes work on Mac and Linux but not Windows.
 		  'CriticalSections work on Windows but not Mac.
 		  '(Verified as of 2011 R4.1)
-		  #if TargetWin32
+		  #if TargetWin32 or TargetiOS // Mutex does not exist on iOS
 		    m_cs = new CriticalSection
 		  #else
 		    m_cs = new Mutex("")

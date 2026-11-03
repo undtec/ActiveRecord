@@ -1,8 +1,8 @@
 #tag Class
 Protected Class App
-Inherits Application
+Inherits DesktopApplication
 	#tag Event
-		Sub Close()
+		Sub Closing()
 		  #if TP_ActiveRecord.kConfigUseVSQLiteDatabase
 		    if DataFile.db <> nil then
 		      DataFile.db.Close()
@@ -15,7 +15,7 @@ Inherits Application
 	#tag EndEvent
 
 	#tag Event
-		Sub Open()
+		Sub Opening()
 		  #if TP_ActiveRecord.kConfigUseVSQLiteDatabase
 		    Valentina.InitClient()
 		    
@@ -36,7 +36,7 @@ Inherits Application
 
 
 	#tag MenuHandler
-		Function AboutActiveRecord() As Boolean Handles AboutActiveRecord.Action
+		Function AboutActiveRecord() As Boolean Handles AboutActiveRecord.MenuItemSelected
 			MessageBox("ActiveRecord for Xojo" + EndOfLine + EndOfLine + _
 			"Release " + Format(TP_ActiveRecord.kVersion, "####.00"))
 			
@@ -46,7 +46,7 @@ Inherits Application
 	#tag EndMenuHandler
 
 	#tag MenuHandler
-		Function ARGenHomePage() As Boolean Handles ARGenHomePage.Action
+		Function ARGenHomePage() As Boolean Handles ARGenHomePage.MenuItemSelected
 			ShowURL("https://strawberrysw.com/argen")
 			
 			return true
@@ -55,7 +55,7 @@ Inherits Application
 	#tag EndMenuHandler
 
 	#tag MenuHandler
-		Function ARHomePage() As Boolean Handles ARHomePage.Action
+		Function ARHomePage() As Boolean Handles ARHomePage.MenuItemSelected
 			ShowURL("https://strawberrysw.com/activerecord")
 			
 			return true
@@ -64,7 +64,7 @@ Inherits Application
 	#tag EndMenuHandler
 
 	#tag MenuHandler
-		Function HelpStrawberryWebsite() As Boolean Handles HelpStrawberryWebsite.Action
+		Function HelpStrawberryWebsite() As Boolean Handles HelpStrawberryWebsite.MenuItemSelected
 			ShowURL("https://strawberrysw.com")
 			
 			return true

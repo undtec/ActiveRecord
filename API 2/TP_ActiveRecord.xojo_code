@@ -259,10 +259,11 @@ Protected Module TP_ActiveRecord
 		  
 		  'if the class is clsSomething, look for Something and tblSomething
 		  'but not if the letter after cls is lowercase
-		  Var sFourth As String = sClassName.Middle(4,1)
+		  'Middle is zero-based, so index 3 is the fourth character
+		  Var sFourth As String = sClassName.Middle(3,1)
 		  if sClassName.left( 3 ) = "cls" and _
-		    sFourth.Compare( "A", ComparisonOptions.CaseInsensitive ) >= -1 And _
-		    sFourth.Compare( "Z", ComparisonOptions.CaseInsensitive ) <= -1 Then
+		    sFourth.Compare( "A", ComparisonOptions.CaseSensitive ) >= 0 And _
+		    sFourth.Compare( "Z", ComparisonOptions.CaseSensitive ) <= 0 Then
 		    sTable = sClassName.Middle(3)
 		    if adp.HasTable( sTable ) then
 		      return sTable
@@ -369,7 +370,7 @@ Protected Module TP_ActiveRecord
 		  end if
 		  
 		  'table not registered and not found by name
-		  Var ex as RuntimeException
+		  Var ex as New RuntimeException
 		  ex.Message = "Class does not have a table registered for it: " + ty.FullName
 		  raise ex
 		End Function
@@ -452,6 +453,8 @@ Protected Module TP_ActiveRecord
 		  case 19 'int64
 		    enFieldType = DBType.DInt64
 		  case else
+		    'unknown type: bind as text rather than silently defaulting to integer
+		    enFieldType = DBType.DText
 		    break
 		  end select
 		  
@@ -981,7 +984,7 @@ Protected Module TP_ActiveRecord
 			    'Mutexes work on Mac and Linux but not Windows.
 			    'CriticalSections work on Windows but not Mac.
 			    '(Verified as of 2011 R4.1)
-			    #if TargetWin32
+			    #if TargetWin32 or TargetiOS // Mutex does not exist on iOS
 			      m_csCtx = new CriticalSection
 			    #else
 			      m_csCtx = new Mutex("")

@@ -79,8 +79,8 @@ Protected Class View
 		      end if
 		    elseif pi.PropertyType.Name = "String" then
 		      Var s as string = oField.StringValue
-		      if Encoding(s) is nil then
-		        s = DefineEncoding(s, Encodings.UTF8)
+		      if s.Encoding is nil then
+		        s = s.DefineEncoding(Encodings.UTF8)
 		      end if
 		      vProperty = s
 		    elseif pi.PropertyType.IsPrimitive then

@@ -1,16 +1,14 @@
 #tag Menu
 Begin Menu MenuBar1
-   Begin MenuItem FileMenu
+   Begin DesktopMenuItem FileMenu
       SpecialMenu = 0
-      Value = "&File"
       Index = -2147483648
       Text = "&File"
       AutoEnabled = True
       AutoEnable = True
       Visible = True
-      Begin QuitMenuItem FileQuit
+      Begin DesktopQuitMenuItem FileQuit
          SpecialMenu = 0
-         Value = "#App.kFileQuit"
          Index = -2147483648
          Text = "#App.kFileQuit"
          ShortcutKey = "#App.kFileQuitShortcut"
@@ -20,17 +18,15 @@ Begin Menu MenuBar1
          Visible = True
       End
    End
-   Begin MenuItem EditMenu
+   Begin DesktopMenuItem EditMenu
       SpecialMenu = 0
-      Value = "&Edit"
       Index = -2147483648
       Text = "&Edit"
       AutoEnabled = True
       AutoEnable = True
       Visible = True
-      Begin MenuItem EditUndo
+      Begin DesktopMenuItem EditUndo
          SpecialMenu = 0
-         Value = "&Undo"
          Index = -2147483648
          Text = "&Undo"
          ShortcutKey = "Z"
@@ -40,18 +36,16 @@ Begin Menu MenuBar1
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem UntitledMenu1
+      Begin DesktopMenuItem UntitledMenu1
          SpecialMenu = 0
-         Value = "-"
          Index = -2147483648
          Text = "-"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem EditCut
+      Begin DesktopMenuItem EditCut
          SpecialMenu = 0
-         Value = "Cu&t"
          Index = -2147483648
          Text = "Cu&t"
          ShortcutKey = "X"
@@ -61,9 +55,8 @@ Begin Menu MenuBar1
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem EditCopy
+      Begin DesktopMenuItem EditCopy
          SpecialMenu = 0
-         Value = "&Copy"
          Index = -2147483648
          Text = "&Copy"
          ShortcutKey = "C"
@@ -73,9 +66,8 @@ Begin Menu MenuBar1
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem EditPaste
+      Begin DesktopMenuItem EditPaste
          SpecialMenu = 0
-         Value = "&Paste"
          Index = -2147483648
          Text = "&Paste"
          ShortcutKey = "V"
@@ -85,27 +77,24 @@ Begin Menu MenuBar1
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem EditClear
+      Begin DesktopMenuItem EditClear
          SpecialMenu = 0
-         Value = "#App.kEditClear"
          Index = -2147483648
          Text = "#App.kEditClear"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem UntitledMenu0
+      Begin DesktopMenuItem UntitledMenu0
          SpecialMenu = 0
-         Value = "-"
          Index = -2147483648
          Text = "-"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem EditSelectAll
+      Begin DesktopMenuItem EditSelectAll
          SpecialMenu = 0
-         Value = "Select &All"
          Index = -2147483648
          Text = "Select &All"
          ShortcutKey = "A"
@@ -116,44 +105,39 @@ Begin Menu MenuBar1
          Visible = True
       End
    End
-   Begin MenuItem HelpMenu
+   Begin DesktopMenuItem HelpMenu
       SpecialMenu = 0
-      Value = "Help"
       Index = -2147483648
       Text = "Help"
       AutoEnabled = True
       AutoEnable = True
       Visible = True
-      Begin MenuItem HelpStrawberryWebsite
+      Begin DesktopMenuItem HelpStrawberryWebsite
          SpecialMenu = 0
-         Value = "Strawberry Software Website"
          Index = -2147483648
          Text = "Strawberry Software Website"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem ARHomePage
+      Begin DesktopMenuItem ARHomePage
          SpecialMenu = 0
-         Value = "ActiveRecord Home Page"
          Index = -2147483648
          Text = "ActiveRecord Home Page"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem ARGenHomePage
+      Begin DesktopMenuItem ARGenHomePage
          SpecialMenu = 0
-         Value = "ARGen Home Page"
          Index = -2147483648
          Text = "ARGen Home Page"
          AutoEnabled = True
          AutoEnable = True
          Visible = True
       End
-      Begin ApplicationMenuItem AboutActiveRecord
+      Begin DesktopApplicationMenuItem AboutActiveRecord
          SpecialMenu = 0
-         Value = "About ActiveRecord"
          Index = -2147483648
          Text = "About ActiveRecord"
          AutoEnabled = True

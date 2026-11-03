@@ -179,9 +179,16 @@ Protected Class Base
 		    adp.DeleteRecord(self)
 		    
 		    RaiseEvent AfterDelete
-		    
+
 		    adp.CommitTransaction
-		    
+
+		    'the record no longer exists, so treat the object as new again
+		    if HasIntegerKey then
+		      ID = 0
+		    else
+		      GUID = ""
+		    end if
+
 		  catch ex as RuntimeException
 		    
 		    adp.RollbackTransaction
@@ -251,11 +258,27 @@ Protected Class Base
 
 	#tag Method, Flags = &h0
 		Function IsNew() As Boolean
+		  'string (GUID) keys convert to 0 through ID, so test each key type on its own terms
+		  if HasIntegerKey then
+		    return ID < 1
+		  end if
+
 		  Var sGUID as String = GUID
-		  if ID < 1 or (sGUID = "" or sGUID = "0") then
+		  return (sGUID.Trim = "" or sGUID = "0")
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function HasIntegerKey() As Boolean
+		  Var oTableInfo as TP_ActiveRecord.P.TableInfo
+		  oTableInfo = GetTableInfo(Introspection.GetType(self))
+
+		  Select Case oTableInfo.piPrimaryKey.PropertyType.Name
+		  Case "Int32", "Int64", "Integer"
 		    return true
-		    
-		  end
+		  End Select
+
+		  return false
 		End Function
 	#tag EndMethod
 
@@ -297,6 +320,14 @@ Protected Class Base
 		    if vProperty.Type=Variant.TypeString then
 		      'do a case sensitive compare for strings
 		      if vProperty.StringValue.Compare(vSavedValue.StringValue, ComparisonOptions.CaseSensitive) <> 0 then
+		        bModified = true
+		        exit for
+		      end if
+		    elseif vProperty isa DateTime and vSavedValue isa DateTime then
+		      'compare DateTimes by value; ReadRecord deliberately stores separate instances
+		      Var dtCurrent As DateTime = vProperty.DateTimeValue
+		      Var dtSaved As DateTime = vSavedValue.DateTimeValue
+		      if dtCurrent.SecondsFrom1970 <> dtSaved.SecondsFrom1970 then
 		        bModified = true
 		        exit for
 		      end if
@@ -435,8 +466,8 @@ Protected Class Base
 		      end if
 		    elseif pi.PropertyType.Name = "String" then
 		      Var s as string = oField.StringValue
-		      if Encoding(s) is nil then
-		        s = DefineEncoding(s, Encodings.UTF8)
+		      if s.Encoding is nil then
+		        s = s.DefineEncoding(Encodings.UTF8)
 		      end if
 		      vProperty = s
 		    elseif pi.PropertyType.IsPrimitive then
@@ -472,16 +503,26 @@ Protected Class Base
 
 	#tag Method, Flags = &h0
 		Sub Save()
+		  'remember the pre-save state so a rollback can restore it
+		  Var dictPreviousSaved As Dictionary = m_dictSavedPropertyValue
+		  Var piKey As Introspection.PropertyInfo
+		  Var vPreviousKey As Variant
+		  Var bInserted As Boolean
+
 		  Var adp as TP_ActiveRecord.DatabaseAdapter = GetDatabaseAdapter
 		  adp.BeginTransaction
-		  
+
 		  RaiseEvent BeforeSave
-		  
+
 		  if IsNew then
 		    RaiseEvent BeforeCreate
-		    
+
+		    Var oTableInfo As TP_ActiveRecord.P.TableInfo = GetTableInfo(Introspection.GetType(self))
+		    piKey = oTableInfo.piPrimaryKey
+		    vPreviousKey = piKey.Value(self)
 		    adp.InsertRecord(self, m_dictSavedPropertyValue)
-		    
+		    bInserted = true
+
 		    RaiseEvent AfterSave
 		    RaiseEvent AfterCreate
 		  else
@@ -501,9 +542,15 @@ Protected Class Base
 		  adp.CommitTransaction
 		  
 		  exception ex as RuntimeException
-		    
+
 		    adp.RollbackTransaction
-		    
+
+		    'the database changes were rolled back, so undo them on the object too
+		    m_dictSavedPropertyValue = dictPreviousSaved
+		    if bInserted then
+		      piKey.Value(self) = vPreviousKey
+		    end if
+
 		    raise ex
 		End Sub
 	#tag EndMethod
