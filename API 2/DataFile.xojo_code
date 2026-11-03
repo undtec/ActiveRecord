@@ -66,9 +66,10 @@ Protected Module DataFile
 		  ConnectionCleanup
 		  
 		  // Begin the Sorting Hat
-		  #if TargetDesktop or (TargetConsole and not TargetWeb) then
+		  #if TargetDesktop or TargetiOS or (TargetConsole and not TargetWeb) then
+		    // iOS has one user and no sessions, so it shares the desktop connection logic
 		    return GetDesktopConnection
-		    
+
 		  #elseif TargetWeb then
 		    return GetWebConnection
 		    
@@ -129,23 +130,37 @@ Protected Module DataFile
 
 	#tag Method, Flags = &h1
 		Protected Function GetDatabase() As Database
-		  // Prepares a %db_type% object to connect
+		  // Prepares the demo SQLiteDatabase, creating the file on first run
 		  // Returns database object if successful
-		  #pragma Error "Set location of your database file"
-		  
 		  try
-		    var fDB as new FolderItem("%db_path%", FolderItem.PathModes.Native)
-		    
+		    Var fFolder As FolderItem
+		    #If TargetiOS Then
+		      // iOS apps may only write inside their own sandbox
+		      fFolder = SpecialFolder.Documents
+		    #Else
+		      fFolder = SpecialFolder.ApplicationData.Child("ActiveRecordDemo")
+		      If Not fFolder.Exists Then
+		        fFolder.CreateFolder
+		      End If
+		    #EndIf
+
 		    var oLocalDB as new SQLiteDatabase
-		    oLocalDB.DatabaseFile = fDB
+		    oLocalDB.DatabaseFile = fFolder.Child("ActiveRecordDemo.sqlite")
 		    // oLocalDB.EncryptionKey = ""
-		    
+
+		    If Not oLocalDB.DatabaseFile.Exists Then
+		      oLocalDB.CreateDatabase
+		    End If
+
 		    // Return the object
 		    return oLocalDB
-		    
-		  catch e as UnsupportedFormatException
-		    // Be sure to set up the database path in GetDatabaseFile
-		    
+
+		  catch e as IOException
+		    // The database folder or file could not be created
+
+		  catch e as DatabaseException
+		    // The database file could not be created
+
 		  end try
 		End Function
 	#tag EndMethod
@@ -154,16 +169,19 @@ Protected Module DataFile
 		Protected Function GetDatabase_Server() As Database
 		  // Prepares a Database object to connect
 		  // Returns database object if successful
-		  var oLocalDB as new PostgreSQLDatabase
-		  oLocalDB.Host = "%template_host%"
-		  oLocalDB.Port = 5432
-		  oLocalDB.DatabaseName = "%template_databasename%"
-		  oLocalDB.UserName = "%template_username%"
-		  
-		  #pragma Error "Supply password for the database." // Delete this line when done.
-		  oLocalDB.Password = "" // Consider obfuscating the password String
-		  
-		  return oLocalDB
+		  // Only compiled when PostgreSQL is enabled; the plugin does not exist on iOS
+		  #if TP_ActiveRecord.kConfigUsePostgreSQLDatabase then
+		    var oLocalDB as new PostgreSQLDatabase
+		    oLocalDB.Host = "%template_host%"
+		    oLocalDB.Port = 5432
+		    oLocalDB.DatabaseName = "%template_databasename%"
+		    oLocalDB.UserName = "%template_username%"
+
+		    #pragma Error "Supply password for the database." // Delete this line when done.
+		    oLocalDB.Password = "" // Consider obfuscating the password String
+
+		    return oLocalDB
+		  #endif
 		End Function
 	#tag EndMethod
 
@@ -171,6 +189,8 @@ Protected Module DataFile
 		Protected Function GetDatabase_ServerSSL() As Database
 		  // Prepares a PostgreSQLDatabase object to connect
 		  // Returns database object if successful
+		  // Only compiled when PostgreSQL is enabled; the plugin does not exist on iOS
+		  #if TP_ActiveRecord.kConfigUsePostgreSQLDatabase then
 		  var oLocalDB as new PostgreSQLDatabase
 		  oLocalDB.Host = "%template_host%"
 		  oLocalDB.Port = 5432
@@ -200,16 +220,17 @@ Protected Module DataFile
 		      oLocalDB.SSLAuthority = %SSLAuthority%
 		      oLocalDB.SSLCertificate = %SSLCertificate%
 		      oLocalDB.SSLKey = %SSLKey%
-		      
+
 		    end
-		    
+
 		  #endif
-		  
+
 		  return oLocalDB
+		  #endif
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = (TargetConsole and (Target32Bit or Target64Bit)) or  (TargetDesktop and (Target32Bit or Target64Bit))
+	#tag Method, Flags = &h21, CompatibilityFlags = (TargetConsole and (Target32Bit or Target64Bit)) or  (TargetDesktop and (Target32Bit or Target64Bit)) or  (TargetIOS and (Target64Bit))
 		Private Function GetDesktopConnection() As Database
 		  // Identify by thread
 		  if Thread.Current = nil then
@@ -345,10 +366,9 @@ Protected Module DataFile
 
 	#tag Method, Flags = &h21
 		Private Sub Register(oLocalDB as Database)
-		  #pragma unused oLocalDB
-		  
 		  // Tables
-		  
+		  TP_ActiveRecord.Table(oLocalDB, "t_person", GetTypeInfo(DataFile.Person))
+
 		  // Views
 		End Sub
 	#tag EndMethod

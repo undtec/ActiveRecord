@@ -78,7 +78,7 @@ Protected Module TP_DBUpdates
 
 	#tag Method, Flags = &h21
 		Private Sub SetDBVersion(toLocalDB as Database, iVersion as Integer)
-		  var sSQL as String = "INSERT INTO t_tp_dbversion(dbversionnumber) VALUES (" + Format(iVersion, "#########") + ");"
+		  var sSQL as String = "INSERT INTO t_tp_dbversion(dbversionnumber) VALUES (" + iVersion.ToString + ");"
 		  toLocalDB.ExecuteSQL(sSQL)
 		End Sub
 	#tag EndMethod
@@ -119,10 +119,14 @@ Protected Module TP_DBUpdates
 
 	#tag Method, Flags = &h21
 		Private Sub UpdateVersion_001(toLocalDB as Database)
-		  // This is an example function for updating the database
-		  // Use it as a template for updates to the database
-		  #pragma unused toLocalDB
-		  // toLocalDB.ExecuteSQL("{SQL Statement}")
+		  // Creates the demo person table
+		  Var sSQL As String = "CREATE TABLE IF NOT EXISTS t_person (" + _
+		  "id INTEGER PRIMARY KEY AUTOINCREMENT, " + _
+		  "FirstName TEXT, " + _
+		  "LastName TEXT, " + _
+		  "DateOfBirth DATE, " + _
+		  "Weight DOUBLE)"
+		  toLocalDB.ExecuteSQL(sSQL)
 		End Sub
 	#tag EndMethod
 

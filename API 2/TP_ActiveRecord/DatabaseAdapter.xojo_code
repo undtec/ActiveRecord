@@ -129,7 +129,20 @@ Protected Class DatabaseAdapter
 		      // if the field is a key and it's 0 or less, then set it to NULL
 		      // If this inserts as 0, that's Xojo's problem.
 		      aroValues.Add(nil)
-		      
+
+		    Elseif pi.PropertyType.Name="DateTime" Then
+		      // Stored in local time, matching how ReadRecord parses it with DateTime.FromString
+		      If v.IsNull Then
+		        aroValues.Add(Nil)
+		      Else
+		        Var dtValue As DateTime = v.DateTimeValue
+		        If oField.enFieldType=TP_ActiveRecord.DBType.DDate Then
+		          aroValues.Add(dtValue.SQLDate)
+		        Else
+		          aroValues.Add(dtValue.SQLDateTime)
+		        End If
+		      End If
+
 		    Elseif pi.PropertyType.Name="Date" Or (pi.PropertyType.Name="Variant" And v.Type=Variant.TypeDate) Then
 		      
 		      Var dt As DateTime = v.DateTimeValue
