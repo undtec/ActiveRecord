@@ -570,7 +570,7 @@ Begin Window winConnect
       Transparent     =   True
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   405
+      Width           =   470
       Begin TextField efDatabaseFile
          AcceptTabs      =   False
          Alignment       =   0
@@ -613,7 +613,7 @@ Begin Window winConnect
          Underline       =   False
          UseFocusRing    =   True
          Visible         =   True
-         Width           =   254
+         Width           =   230
       End
       Begin Label Label6
          AutoDeactivate  =   True
@@ -649,6 +649,38 @@ Begin Window winConnect
          Underline       =   False
          Visible         =   True
          Width           =   114
+      End
+      Begin PushButton pbBrowse
+         AutoDeactivate  =   True
+         Bold            =   False
+         ButtonStyle     =   0
+         Cancel          =   False
+         Caption         =   "Browse..."
+         Default         =   False
+         Enabled         =   True
+         Height          =   22
+         HelpTag         =   ""
+         Index           =   -2147483648
+         InitialParent   =   "cvSqlite"
+         Italic          =   False
+         Left            =   394
+         LockBottom      =   False
+         LockedInPosition=   False
+         LockLeft        =   True
+         LockRight       =   False
+         LockTop         =   True
+         Scope           =   0
+         TabIndex        =   2
+         TabPanelIndex   =   0
+         TabStop         =   True
+         TextFont        =   "System"
+         TextSize        =   0.0
+         TextUnit        =   0
+         Top             =   99
+         Transparent     =   True
+         Underline       =   False
+         Visible         =   True
+         Width           =   101
       End
    End
    Begin Label Label7
@@ -990,6 +1022,19 @@ End
 		Sub Action()
 		  db = nil
 		  Close
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events pbBrowse
+	#tag Event
+		Sub Action()
+		  // Let the user pick an existing database file instead of typing its path
+		  Var dlg As New OpenFileDialog
+		  dlg.Title = "Choose a database file"
+		  Var f As FolderItem = dlg.ShowModal
+		  If f <> Nil Then
+		    efDatabaseFile.Text = f.NativePath
+		  End If
 		End Sub
 	#tag EndEvent
 #tag EndEvents

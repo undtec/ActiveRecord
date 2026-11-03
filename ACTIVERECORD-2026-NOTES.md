@@ -12,7 +12,7 @@ Prepared 3 November 2026. Branch `activerecord-xojo2026-fixes`, pushed to
 
 | Folder | Contents | Status |
 |---|---|---|
-| `ActiveRecord/` | The older BKeeney ActiveRecord (`BKS_ActiveRecord`), API 1, with a desktop demo | Fixed to compile and run in 2026r3 (commit `089e537`) |
+| `ActiveRecord/` | The older BKeeney ActiveRecord (`BKS_ActiveRecord`), API 1, with a desktop demo | Fixed to compile and run in 2026r3 (commits `089e537` and `f8b7c76`) |
 | `API 2/` | The newer TP_ActiveRecord library (API 2) with a desktop demo | Bugs fixed, converted to true API 2, working demo (commit `d1d7063`) |
 | `API 2/ACTIVE RECORD iOS/` | New iOS project that shares the `API 2` library | New, working demo (commit `d1d7063`) |
 | `API 1/` | Older TP_ActiveRecord, API 1 | Untouched. Five files were already deleted on disk before this work and remain unstaged |
@@ -43,11 +43,40 @@ Bugs fixed in the library and demo:
 6. `winConnect` validated the server-name field instead of the database-file
    field.
 
-Not fixed in the BKeeney version (left as known issues): dates are shifted to
-GMT on save, nested transactions on SQLite can commit partial work,
-`BaseList` misaligns if rows are deleted while it is open, and the PostgreSQL,
-Oracle and MSSQL adapters have SQL and ID problems. These matter only if the
-BKeeney version is used further; the API 2 version is the one to carry forward.
+A second round of fixes (commit `f8b7c76`) dealt with the issues first left
+open:
+
+7. **Dates** were shifted to GMT on save, so a `DATE` column stored the
+   previous day anywhere east of Greenwich, and times drifted by an hour across
+   daylight saving. Dates are now stored and read in local time. Dates saved by
+   the old code are in GMT and read back shifted by the local offset.
+8. **Nested transactions** only counted levels, so a failed save inside a
+   larger transaction could still be committed with it. They now use database
+   savepoints, handled once in `DatabaseAdapter` for every adapter. The level
+   is counted only after `BEGIN` succeeds, a rollback with nothing open is
+   ignored, and pending work is no longer committed silently. MSSQL and Oracle
+   supply their own savepoint syntax.
+9. **`BaseList`** matched loaded records to list positions by order, so a row
+   deleted after the list was built misplaced every later record. It now
+   matches by ID; a deleted row returns Nil from `Item`.
+10. **PostgreSQL** `Load` and `Delete` used `?` placeholders, which PostgreSQL
+    rejects; they now use `$1`. Its value binding now stores empty keys and the
+    Double sentinel as NULL, and dates in local time.
+11. **Oracle** called `LASTVAL()`, a PostgreSQL function, after every insert.
+    It now raises a clear error, because Oracle needs table-specific code to
+    return a new row's ID.
+12. **MSSQL** keeps `@@IDENTITY` (the review's suggested `SCOPE_IDENTITY()`
+    returns NULL when queried in a separate batch, as this code does). The
+    trigger caveat is documented in the code.
+13. **Web** `Disconnect` now checks for a session before removing its
+    context, and **`Query`** raises a clear error when a class has no
+    `Constructor(rs As RecordSet)`.
+
+The demo's Connect window also has a **Browse...** button to pick a database
+file instead of typing its path.
+
+Tested in the demo: dates and saves (SQLite). Items 10 to 13 compile but are
+untested, because they need a database server or a Web project.
 
 ### 1.3 API 2 library (`API 2/TP_ActiveRecord`)
 
