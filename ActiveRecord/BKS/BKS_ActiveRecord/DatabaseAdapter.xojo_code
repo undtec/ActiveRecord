@@ -2,7 +2,22 @@
 Protected Class DatabaseAdapter
 	#tag Method, Flags = &h0
 		Sub BeginTransaction()
-		  SQLExecute( "BEGIN" )
+		  'The outermost call starts a real transaction. Nested calls (for example a Save
+		  'inside a BKS_ActiveRecord.Transaction) create a savepoint, so an inner rollback
+		  'undoes only the inner work instead of being silently ignored.
+		  if m_iTransactionCt = 0 then
+		    Var sBegin As String = SQLBeginTransaction
+		    if sBegin <> "" then
+		      SQLExecute(sBegin)
+		    end if
+		  else
+		    Var sSavepoint As String = SavepointName(m_iTransactionCt)
+		    Var sSQL As String = SQLSavepoint(sSavepoint)
+		    SQLExecute(sSQL)
+		  end if
+
+		  'only count the level once the statement has succeeded
+		  m_iTransactionCt = m_iTransactionCt + 1
 		End Sub
 	#tag EndMethod
 
@@ -310,13 +325,9 @@ Protected Class DatabaseAdapter
 		        dt1.GMTOffset = dt.GMTOffset
 		        dt1.TotalSeconds = dt.TotalSeconds
 		        v = dt1 'copied for the saved value
-		        
-		        dim dt2 as new Date
-		        dt2.GMTOffset = dt.GMTOffset
-		        dt2.TotalSeconds = dt.TotalSeconds
-		        dt2.GMTOffset = 0
-		        dt = dt2
-		        
+
+		        'Dates are stored in local time, matching ReadRecord. Converting to GMT here
+		        'shifted DATE columns back a day for anyone east of Greenwich.
 		        if oField.enFieldType=BKS_ActiveRecord.DbType.DDate then
 		          stmt.Bind(i, dt.SQLDate)
 		        elseif oField.enFieldType=BKS_ActiveRecord.DbType.DTimestamp then
@@ -342,7 +353,26 @@ Protected Class DatabaseAdapter
 
 	#tag Method, Flags = &h0
 		Sub CommitTransaction()
-		  Db.Commit
+		  if m_iTransactionCt <= 0 then
+		    raise new ActiveRecordException("CommitTransaction called without a matching BeginTransaction")
+		  end if
+
+		  m_iTransactionCt = m_iTransactionCt - 1
+
+		  if m_iTransactionCt = 0 then
+		    Db.Commit
+		    if Db.Error then
+		      dim ex as new BKS_ActiveRecord.DatabaseException(Db, "Commit")
+		      Db.Rollback
+		      raise ex
+		    end if
+		  else
+		    Var sSavepoint As String = SavepointName(m_iTransactionCt)
+		    Var sRelease As String = SQLReleaseSavepoint(sSavepoint)
+		    if sRelease <> "" then
+		      SQLExecute(sRelease)
+		    end if
+		  end if
 		End Sub
 	#tag EndMethod
 
@@ -448,8 +478,61 @@ Protected Class DatabaseAdapter
 
 	#tag Method, Flags = &h0
 		Sub RollbackTransaction()
-		  Db.Rollback
+		  'Nothing open, for example when BeginTransaction itself failed. Ignoring this
+		  'keeps the level counter from going negative.
+		  if m_iTransactionCt <= 0 then
+		    return
+		  end if
+
+		  m_iTransactionCt = m_iTransactionCt - 1
+
+		  if m_iTransactionCt = 0 then
+		    Db.Rollback
+		  else
+		    Var sSavepoint As String = SavepointName(m_iTransactionCt)
+		    Var sRollback As String = SQLRollbackToSavepoint(sSavepoint)
+		    SQLExecute(sRollback)
+		    Var sRelease As String = SQLReleaseSavepoint(sSavepoint)
+		    if sRelease <> "" then
+		      SQLExecute(sRelease)
+		    end if
+		  end if
 		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function SavepointName(iLevel as Integer) As String
+		  Var sLevel As String = iLevel.ToString
+		  return "bks_ar_sp" + sLevel
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLBeginTransaction() As String
+		  'Override for databases with different syntax. Return "" if transactions start implicitly.
+		  return "BEGIN"
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLReleaseSavepoint(sName as String) As String
+		  'Override for databases with different syntax. Return "" if there is no release statement.
+		  return "RELEASE SAVEPOINT " + sName
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLRollbackToSavepoint(sName as String) As String
+		  'Override for databases with different syntax.
+		  return "ROLLBACK TO SAVEPOINT " + sName
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLSavepoint(sName as String) As String
+		  'Override for databases with different syntax.
+		  return "SAVEPOINT " + sName
+		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -550,6 +633,11 @@ Protected Class DatabaseAdapter
 		  dictSavedPropertyValue = dictFieldValue
 		End Sub
 	#tag EndMethod
+
+
+	#tag Property, Flags = &h21
+		Private m_iTransactionCt As Integer
+	#tag EndProperty
 
 
 	#tag ViewBehavior

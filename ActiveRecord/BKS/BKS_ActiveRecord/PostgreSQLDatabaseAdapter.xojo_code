@@ -9,9 +9,38 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 		    dim oField as BKS_ActiveRecord.P.FieldInfo = aroField(i)
 		    dim pi as Introspection.PropertyInfo = oField.piFieldProperty
 		    dim v as Variant = pi.Value(oRecord)
-		    
-		    stmt.Bind(i, v)
-		    
+
+		    'Same rules as DatabaseAdapter.BindValues, which PostgreSQL cannot use because
+		    'it binds by position without type codes.
+		    if oField.IsKey and v.IntegerValue<=0 then
+		      'a key of 0 or less is stored as NULL so foreign key constraints are not broken
+		      stmt.Bind(i, nil)
+
+		    elseif pi.PropertyType.Name="Date" or (pi.PropertyType.Name="Variant" and v.Type=Variant.TypeDate) then
+		      dim dt as Date = v.DateValue
+		      if dt=nil then
+		        stmt.Bind(i, nil)
+		      else
+		        dim dtCopy as new Date
+		        dtCopy.GMTOffset = dt.GMTOffset
+		        dtCopy.TotalSeconds = dt.TotalSeconds
+		        v = dtCopy 'copied for the saved value
+
+		        'local time, matching Base.ReadRecord
+		        if oField.enFieldType=BKS_ActiveRecord.DbType.DDate then
+		          stmt.Bind(i, dt.SQLDate)
+		        else
+		          stmt.Bind(i, dt.SQLDateTime)
+		        end if
+		      end if
+
+		    elseif pi.PropertyType.Name="Double" and v.DoubleValue = BKS_ActiveRecord.kDoubleNullSentinal then
+		      stmt.Bind(i, nil)
+
+		    else
+		      stmt.Bind(i, v)
+		    end if
+
 		    dictFieldValue.Value(pi.Name) = v
 		    
 		  next
@@ -39,6 +68,27 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 		Function Db() As Database
 		  return m_db
 		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub DeleteRecord(oRecord as BKS_ActiveRecord.Base)
+		  'Overrides the base class because PostgreSQL uses $1 placeholders, not ?
+		  dim oTableInfo as BKS_ActiveRecord.P.TableInfo
+		  oTableInfo = GetTableInfo( Introspection.GetType(oRecord) )
+
+		  Var sql As String = "DELETE FROM " + oTableInfo.sTableName + _
+		  " WHERE " + oTableInfo.sPrimaryKey + "=$1"
+
+		  dim stmt as PreparedSQLStatement
+		  stmt = db.Prepare(sql)
+		  Var iID As Int64 = oRecord.ID
+		  stmt.Bind(0, iID)
+
+		  stmt.SQLExecute
+		  if db.Error then
+		    raise new BKS_ActiveRecord.DatabaseException(db)
+		  end if
+		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
@@ -93,6 +143,28 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 		  dictSavedPropertyValue = dictFieldValue
 		  
 		  return iRecordID
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function SelectRecord(oRecord as BKS_ActiveRecord.Base, iRecordID as integer) As RecordSet
+		  'Overrides the base class because PostgreSQL uses $1 placeholders, not ?
+		  dim oTableInfo as BKS_ActiveRecord.P.TableInfo
+		  oTableInfo = GetTableInfo( Introspection.GetType(oRecord) )
+
+		  Var sql As String = "SELECT * FROM " + oTableInfo.sTableName + _
+		  " WHERE " + oTableInfo.sPrimaryKey + "=$1"
+
+		  dim stmt as PreparedSQLStatement
+		  stmt = db.Prepare(sql)
+		  stmt.Bind(0, iRecordID)
+
+		  dim rs as RecordSet = stmt.SQLSelect
+		  if db.Error then
+		    raise new BKS_ActiveRecord.DatabaseException(db)
+		  end if
+
+		  return rs
 		End Function
 	#tag EndMethod
 

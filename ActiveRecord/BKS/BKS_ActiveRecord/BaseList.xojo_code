@@ -53,6 +53,7 @@ Protected Class BaseList
 
 	#tag Method, Flags = &h0
 		Function Item(index as integer) As BKS_ActiveRecord.Base
+		  'Returns Nil if the record was deleted after this list was built. Check for Nil.
 		  if m_aro(index)<>nil then
 		    return m_aro(index)
 		  end if
@@ -87,13 +88,23 @@ Protected Class BaseList
 		  dim sCriteria as string
 		  sCriteria = sPrimaryKey + " IN (" + Join(arsId, ",") + ")"
 		  dim arv() as Variant = BKS_ActiveRecord.Query(m_tyElement, sCriteria, sPrimaryKey)
-		  for i as integer = 0 to arv.Ubound
-		    dim oRecord as BKS_ActiveRecord.Base = arv(i)
-		    if oRecord.ID = arid(i) then
-		      m_aro(aridix(i)) = oRecord
-		    else
-		      break
+
+		  'Match records to list positions by ID, not by position. If a row was deleted
+		  'after the list was built, the query returns fewer rows; matching by position
+		  'would put every later record in the wrong slot.
+		  Var dictByID As New Dictionary
+		  for each v as Variant in arv
+		    dim oRecord as BKS_ActiveRecord.Base = v
+		    Var iID As Int64 = oRecord.ID
+		    dictByID.Value(iID) = oRecord
+		  next
+
+		  for i as integer = 0 to arid.Ubound
+		    Var iID As Int64 = arid(i)
+		    if dictByID.HasKey(iID) then
+		      m_aro(aridix(i)) = dictByID.Value(iID)
 		    end if
+		    'a deleted row stays Nil; Item returns Nil for it
 		  next
 		End Sub
 	#tag EndMethod

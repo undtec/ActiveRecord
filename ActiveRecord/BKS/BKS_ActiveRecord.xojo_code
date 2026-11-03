@@ -108,7 +108,9 @@ Protected Module BKS_ActiveRecord
 		  ctx.ConnectionAdapter_Remove(ty)
 		  #if RBVersion >= 2011.04
 		    #if TargetWeb
-		      if ctx.ConnectionAdapter_Count=0 then
+		      'Without a session GetContext used the default context, so there is no
+		      'per-session context to remove (and Session.Identifier would fail).
+		      if ctx.ConnectionAdapter_Count=0 and Session.Available and m_dictContext<>nil then
 		        'kill the context
 		        dim lck as new BKS_ActiveRecord.P.ScopedLock(csCtx)
 		        m_dictContext.Remove(Session.Identifier)
@@ -454,7 +456,10 @@ Protected Module BKS_ActiveRecord
 		  
 		  dim oConstructor as Introspection.ConstructorInfo
 		  oConstructor = GetTypeConstructor(oTableInfo)
-		  
+		  if oConstructor is nil then
+		    raise new ActiveRecordException("Query needs a Constructor(rs As RecordSet) on " + ty.FullName)
+		  end if
+
 		  dim rs as RecordSet
 		  rs = adp.SelectList(oTableInfo.sTableName, sCriteria, sOrder)
 		  

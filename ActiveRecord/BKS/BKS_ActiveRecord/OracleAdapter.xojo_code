@@ -24,9 +24,29 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 
 	#tag Method, Flags = &h1
 		Protected Function GetLastInsertID() As Int64
-		  dim rs as RecordSet
-		  rs = SQLSelect("SELECT LASTVAL();")
-		  return rs.IdxField(1).Int64Value
+		  'LASTVAL() is a PostgreSQL function and does not exist in Oracle, so the old code
+		  'failed on every insert. Oracle has no generic "last inserted ID": it needs the
+		  'table's sequence name or an INSERT ... RETURNING ... INTO, both table specific.
+		  'Override InsertRecord for Oracle tables before using this adapter.
+		  dim ex as new UnsupportedOperationException
+		  ex.Message = "OracleAdapter cannot read the new record's ID. Override InsertRecord to use the table's sequence or RETURNING INTO."
+		  raise ex
+		End Function
+	#tag EndMethod
+
+
+	#tag Method, Flags = &h1
+		Protected Function SQLBeginTransaction() As String
+		  'Oracle starts transactions implicitly
+		  return ""
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLReleaseSavepoint(sName as String) As String
+		  'Oracle has no release statement for savepoints
+		  #pragma unused sName
+		  return ""
 		End Function
 	#tag EndMethod
 

@@ -1,27 +1,6 @@
 #tag Class
 Protected Class cubeSQLDatabaseAdapter
 Inherits BKS_ActiveRecord.DatabaseAdapter
-	#tag Method, Flags = &h0
-		Sub BeginTransaction()
-		  'If you are not connecting to CubeSQLServer and do not have the CubeSQLServer plugin delete this class (cubeSQLDatabaseAdapter)
-		  #if BKS_ActiveRecordConfig.kIncludeCubeDatabase
-		    dim db as CubeSQLServer = CubeSQLServer(m_db)
-		    if m_iTransactionCt=0 and not db.AutoCommit then
-		      try
-		        m_db.Commit 'commit the auto transaction
-		      catch ex as RuntimeException
-		        'ignore this one
-		      end try
-		    end if
-		    
-		    if m_iTransactionCt=0 then
-		      SQLExecute( "BEGIN" )
-		    end if
-		    m_iTransactionCt = m_iTransactionCt + 1
-		  #endif
-		End Sub
-	#tag EndMethod
-
 	#tag Method, Flags = &h21
 		Private Function BindValues(oStmt as Object, oRecord as BKS_ActiveRecord.Base, aroField() as BKS_ActiveRecord.P.FieldInfo) As Dictionary
 		  // Overriding the parent class ...
@@ -124,20 +103,6 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 		    return dictFieldValue
 		  #endif
 		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub CommitTransaction()
-		  m_iTransactionCt = m_iTransactionCt - 1
-		  if m_iTransactionCt=0 then
-		    Db.Commit
-		    if db.Error then
-		      dim ex as new BKS_ActiveRecord.DatabaseException(db, "Commit")
-		      db.Rollback
-		      raise ex
-		    end if
-		  end if
-		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -250,15 +215,6 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub RollbackTransaction()
-		  m_iTransactionCt = m_iTransactionCt - 1
-		  if m_iTransactionCt=0 then
-		    Db.Rollback
-		  end if
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Function SelectRecord(oRecord as BKS_ActiveRecord.Base, iRecordID as Int64) As RecordSet
 		  // Overriding the parent class ...
 		  #if BKS_ActiveRecordConfig.kIncludeCubeDatabase
@@ -344,10 +300,6 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 
 	#tag Property, Flags = &h21
 		Private m_db As Database
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private m_iTransactionCt As Integer
 	#tag EndProperty
 
 

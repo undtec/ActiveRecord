@@ -24,9 +24,42 @@ Inherits BKS_ActiveRecord.DatabaseAdapter
 
 	#tag Method, Flags = &h1
 		Protected Function GetLastInsertID() As Int64
+		  '@@IDENTITY is used deliberately. SCOPE_IDENTITY() would return NULL here because
+		  'this query runs as a separate batch after the INSERT. Caveat: if the table has a
+		  'trigger that inserts into another identity table, @@IDENTITY returns that ID.
 		  dim rs as RecordSet
 		  rs = SQLSelect("SELECT @@IDENTITY;")
 		  return rs.IdxField(1).Int64Value
+		End Function
+	#tag EndMethod
+
+
+	#tag Method, Flags = &h1
+		Protected Function SQLBeginTransaction() As String
+		  'In T-SQL a plain BEGIN starts a statement block, not a transaction
+		  return "BEGIN TRANSACTION"
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLReleaseSavepoint(sName as String) As String
+		  'T-SQL has no release statement for savepoints
+		  #pragma unused sName
+		  return ""
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLRollbackToSavepoint(sName as String) As String
+		  'T-SQL savepoint syntax
+		  return "ROLLBACK TRANSACTION " + sName
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function SQLSavepoint(sName as String) As String
+		  'T-SQL savepoint syntax
+		  return "SAVE TRANSACTION " + sName
 		End Function
 	#tag EndMethod
 

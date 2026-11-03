@@ -322,11 +322,14 @@ Protected Class Base
 		      if v = nil or v = "" then
 		        vProperty=nil
 		      else
+		        'Dates are stored in local time (see DatabaseAdapter.BindValues)
 		        dim dt as new Date
-		        dim dOffset as double = dt.GMTOffset
-		        dt.GMTOffset = 0
-		        dt.SQLDateTime = v.StringValue
-		        dt.GMTOffset = dOffset
+		        Var sStored As String = v.StringValue
+		        if sStored.Len = 10 then
+		          dt.SQLDate = sStored 'DATE column: YYYY-MM-DD
+		        else
+		          dt.SQLDateTime = sStored
+		        end if
 		        vProperty=dt
 		      end if
 		      
